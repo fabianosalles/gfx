@@ -1,0 +1,12 @@
+# Build e arquivos gerados pelo CMake
+out/
+.vs/
+enc_temp_folder/
+
+# Arquivos gerados por IDEs e compiladores
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+*.exe
