@@ -12,16 +12,13 @@ void FX::DoomFire::InitFire() {
 
 	render_target = LoadRenderTexture(width, height);
 	SetTextureFilter(render_target.texture, TEXTURE_FILTER_POINT);
-
-	//buffer all black
-	heat_buffer.assign(static_cast<std::size_t>(width) * height, 0);
-
-	//set bottom row to max heat
+	heat_buffer = new uint8_t[width * height] { 0 };
 	Burn();
 }
 
 FX::DoomFire::~DoomFire()
 {
+	delete[] heat_buffer;
 	UnloadRenderTexture(render_target);
 }
 
@@ -34,15 +31,13 @@ void FX::DoomFire::DrawToBuffer() {
 
 		for (auto y = 0; y < height; y++) {
 			for (auto x = 0; x < width; x++) {
-				uint8_t heat = heat_buffer[(y * width) + x];
-				float intensity = static_cast<float>(heat) / max_heat;
-				Color color = {
-					std::min(255.0f, heat * 7 * intensity),
-					std::min(255.0f, heat * 2 * intensity),
-					std::min(255.0f, heat / 2 * intensity),
-					std::min(255.0f, (heat * 255 / max_heat) * intensity)
-				};
-
+				auto heat = static_cast<float>(heat_buffer[(y * width) + x]);
+				float intensity = heat / static_cast<float>(max_heat);
+				Color color;
+				color.r = static_cast<uint8_t>(std::min(255.0f, heat * 7.0f * intensity));
+				color.g = static_cast<uint8_t>(std::min(255.0f, heat * 2.0f * intensity));
+				color.b = static_cast<uint8_t>(std::min(255.0f, heat / 2.0f * intensity));
+				color.a = static_cast<uint8_t>(std::min(255.0f, (heat * 255.f / static_cast<float>(max_heat)) * intensity));
 				DrawPixel(x, y, color);
 			}
 		}	

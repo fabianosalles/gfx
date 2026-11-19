@@ -1,5 +1,6 @@
-﻿#include <raylib.h>
-#define RAYGUI_IMPLEMENTATION
+﻿#define RAYGUI_IMPLEMENTATION
+
+#include <raylib.h>
 #include <raygui.h>
 #include <algorithm>
 #include "fx.h"
@@ -32,10 +33,9 @@ void HaneldInput(FX::DoomFire& fire)
 	}
 }
 
-void DrawFireControls(FX::DoomFire& fire, bool& active)
+void DrawFireControls(FX::DoomFire& fire)
 {
 	const int panel_w = 300;
-	
 	
 	Rectangle panel = { 
 		GetScreenWidth() - panel_w - 20, 
@@ -49,21 +49,19 @@ void DrawFireControls(FX::DoomFire& fire, bool& active)
 		{ panel.x + 120.0f, panel.y + 35.0f, 155.0f, 24.0f },
 		"1", "255", &max_heat, 1.0f, 255.0f);
 	fire.max_heat = std::clamp(int(max_heat + 0.5f), 1, 255);
-	if (fire.max_heat != previous_max_heat && active)
+	if (fire.max_heat != previous_max_heat)
 		fire.Burn();
 	GuiLabel({ panel.x + 15.0f, panel.y + 35.0f, 100.0f, 24.0f },
 		TextFormat("Max heat: %i", fire.max_heat));
 
-	bool is_burning = (fire.GetState() == FX::DoomFire::BURNING);
-	bool previous_state = is_burning;
+	bool is_burning = fire.IsBurning();
+	bool previous_state = fire.IsBurning();
 	GuiCheckBox({ panel.x + 15.0f, panel.y + 75.0f, 24.0f, 24.0f }, "Active", &is_burning);
 	if (is_burning != previous_state) {
-		if (is_burning) {
+		if (is_burning)
 			fire.Burn();
-		} else {
+		else
 			fire.Vanish();
-		}
-		active = is_burning;
 	}
 }
 
@@ -94,16 +92,13 @@ int main()
 								
 				DrawText(TextFormat("%i FPS - max heat: %i - B burn, V vanish ", GetFPS(), fire.max_heat), 5, 5, 20, RED);
 
-				
 				DrawTextEx(arcade_font, TextFormat("DOOM fire fx"),
 					{ 50.0f, 300.0f },
 					220.0f, 1.0f,
 					RED);
 
 				fire.RenderTo({ 0, 0, float(GetScreenWidth()), float(GetScreenHeight()) });
-				DrawFireControls(fire, active);
-								
-
+				DrawFireControls(fire);
 
 			EndDrawing();
 		}

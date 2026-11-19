@@ -1,6 +1,6 @@
+#pragma once
+
 #include <cinttypes>
-#include <cstddef>
-#include <vector>
 #include <raylib.h>
 
 namespace FX {
@@ -20,11 +20,12 @@ namespace FX {
 
 		void Burn();
 		void Vanish();
-		[[nodiscard]] bool IsActive() const noexcept{ return state == BURNING;}
+
+		[[nodiscard]] bool IsBurning() const noexcept{ return state == BURNING;}
 		[[nodiscard]] State GetState() const noexcept{ return state; }
 	private:
-		DoomFire::State state = IDLE;
-		std::vector<uint8_t> heat_buffer;
+		State state = IDLE;
+		uint8_t* heat_buffer;
 		RenderTexture2D render_target{};		
 
 		void InitFire();
