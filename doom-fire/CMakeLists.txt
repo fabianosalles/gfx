@@ -23,4 +23,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib)
 
+FetchContent_Declare(
+  raygui
+  GIT_REPOSITORY https://github.com/raysan5/raygui.git
+  GIT_TAG 4.0
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(raygui)
+
 add_subdirectory ("doom-fire")

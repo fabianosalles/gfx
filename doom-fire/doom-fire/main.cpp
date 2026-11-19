@@ -1,113 +1,112 @@
 ﻿#include <raylib.h>
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
+#include <algorithm>
 #include <cinttypes>
-
-#define FIRE_WIDTH 160
-#define FIRE_HEIGHT 140
-#define MAX_HEAT 36
-
-uint8_t fire[FIRE_HEIGHT][FIRE_WIDTH] = { 0 };
-float titleY;
-const int titleFontSize = 80;
-const float titleSpeed = 60.0f; // Pixels por segundo.
+#include "fx.h"
 
 
-void InitFire()
+void HaneldInput(FX::DoomFire& fire)
 {
-	for (auto x = 0; x < FIRE_WIDTH; x++) {
-		fire[FIRE_HEIGHT - 1][x] = MAX_HEAT;
-	}
+	if (IsKeyPressed(KEY_V)) 
+		fire.Vanish();
 	
-}
 
-void InitTitle()
-{
-	titleY = (float)GetScreenHeight();
-}
-
-void UpdateFire()
-{
-	for (int y = 1; y < FIRE_HEIGHT; y++) {
-		for (int x = 0; x < FIRE_WIDTH; x++) {
-			int heat = fire[y][x];
-
-			int random = GetRandomValue(0, 3);
-			int cooling = random & 1;
-			int targetX = x + 1 - random;
-
-			// Faz as bordas horizontais se conectarem.
-			targetX = (targetX + FIRE_WIDTH) % FIRE_WIDTH;
-
-			int nextHeat = heat - cooling;
-
-			fire[y - 1][targetX] = (uint8_t)(nextHeat > 0 ? nextHeat : 0);
+	if (IsKeyPressed(KEY_B)) 
+		fire.Burn();	
+	
+	if (IsKeyPressed(KEY_KP_ADD)) {
+		fire.max_heat++;
+		if (fire.max_heat > 255) {
+			fire.max_heat = 1;
 		}
+	}		
+
+	if (IsKeyPressed(KEY_KP_SUBTRACT)) {
+		fire.max_heat--;
+		if (fire.max_heat < 1) {
+			fire.max_heat = 255;
+		}
+	}
+
+	if (IsKeyPressed(KEY_F)) {
+		ToggleFullscreen();		
 	}
 }
 
-void DrawFire()
+void DrawFireControls(FX::DoomFire& fire, bool& active)
 {
-	int scale = GetScreenWidth() / FIRE_WIDTH;
-	int offsetY = GetScreenHeight() - FIRE_HEIGHT * scale;
-	for (auto y = 0; y < FIRE_HEIGHT; y++) {
-		for (auto x = 0; x < FIRE_WIDTH; x++) {
-			uint8_t heat = fire[y][x];
-			Color color = { 
-				heat * 7, 
-				heat * 2, 
-				heat / 2, 
-				(heat * 255 / MAX_HEAT) 
-			};
+	const int panel_w = 300;
+	
+	
+	Rectangle panel = { 
+		GetScreenWidth() - panel_w - 20, 
+		20.0f, panel_w, 130.0f };
+	DrawRectangleRec(panel, Fade(BLACK, 0.75f));
+	
+	GuiGroupBox(panel, "FIRE CONTROLS");
+	float max_heat = static_cast<float>(fire.max_heat);
+	const int previous_max_heat = fire.max_heat;
+	GuiSlider(
+		{ panel.x + 120.0f, panel.y + 35.0f, 155.0f, 24.0f },
+		"1", "255", &max_heat, 1.0f, 255.0f);
+	fire.max_heat = std::clamp(static_cast<int>(max_heat + 0.5f), 1, 255);
+	if (fire.max_heat != previous_max_heat && active)
+		fire.Burn();
+	GuiLabel({ panel.x + 15.0f, panel.y + 35.0f, 100.0f, 24.0f },
+		TextFormat("Max heat: %i", fire.max_heat));
 
-			DrawRectangle(
-				x * scale, 
-				offsetY + y * scale,
-				scale,
-				scale,
-				color);
-		}
+	const bool previous_active = active;
+	GuiCheckBox({ panel.x + 15.0f, panel.y + 75.0f, 24.0f, 24.0f }, "Active", &active);
+	if (active != previous_active) {
+		if (active)
+			fire.Burn();
+		else
+			fire.Vanish();
 	}
-}
-
-void UpdateTitle()
-{
-	float targetY = (GetScreenHeight() - titleFontSize) / 2.0f;
-
-	if (titleY > targetY) {
-		titleY -= titleSpeed * GetFrameTime();
-
-		// Impede que ultrapasse o centro.
-		if (titleY < targetY) {
-			titleY = targetY;
-		}
-	}
-}
-
-void DrawTitle()
-{
-	const char* text = "DOOM FIRE FX";
-	int textWidth = MeasureText(text, titleFontSize);
-	int textX = (GetScreenWidth() - textWidth) / 2;
-
-	DrawText(text, textX, (int)titleY, titleFontSize, RED);
 }
 
 int main()
 {	
-	InitWindow(800, 600, "Doom Fire");
-	SetTargetFPS(60);	
-	InitFire();
-	InitTitle();
-	while (!WindowShouldClose())
+	
+	SetConfigFlags(FLAG_VSYNC_HINT);
+	InitWindow(1280, 720, "Doom Fire");
+	SetTargetFPS(60);		
 	{
-		UpdateFire();
-		UpdateTitle();
-		BeginDrawing();
-		ClearBackground(BLACK);
-		
-		DrawTitle();
-		DrawFire();					
-		DrawText(TextFormat("%i FPS", GetFPS()), 5, 5, 20, RED);
-		EndDrawing();
+		auto arcade_font = LoadFontEx("assets/font/arcade.ttf", 120, 0, 0);
+		if (!IsFontValid(arcade_font)) {
+			TraceLog(LOG_ERROR, "Failed to load arcade font");		
+			return -1;
+		}
+
+		FX::DoomFire fire(320, 180);
+		bool active = true;
+		fire.Burn();
+		while (!WindowShouldClose())
+		{
+			HaneldInput(fire);
+			fire.Update();
+			fire.DrawToBuffer();
+
+			BeginDrawing();
+				ClearBackground(BLACK);
+								
+				DrawText(TextFormat("%i FPS - max heat: %i - B burn, V vanish ", GetFPS(), fire.max_heat), 5, 5, 20, RED);
+
+				
+				DrawTextEx(arcade_font, TextFormat("DOOM fire fx"),
+					{ 50.0f, 300.0f },
+					220.0f, 1.0f,
+					RED);
+
+				fire.RenderTo({ 0, 0, float(GetScreenWidth()), float(GetScreenHeight()) });
+				DrawFireControls(fire, active);
+								
+
+
+			EndDrawing();
+		}
+		UnloadFont(arcade_font);
 	}
 
 	CloseWindow();
