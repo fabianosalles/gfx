@@ -2,7 +2,6 @@
 #define RAYGUI_IMPLEMENTATION
 #include <raygui.h>
 #include <algorithm>
-#include <cinttypes>
 #include "fx.h"
 
 
@@ -10,7 +9,6 @@ void HaneldInput(FX::DoomFire& fire)
 {
 	if (IsKeyPressed(KEY_V)) 
 		fire.Vanish();
-	
 
 	if (IsKeyPressed(KEY_B)) 
 		fire.Burn();	
@@ -50,19 +48,22 @@ void DrawFireControls(FX::DoomFire& fire, bool& active)
 	GuiSlider(
 		{ panel.x + 120.0f, panel.y + 35.0f, 155.0f, 24.0f },
 		"1", "255", &max_heat, 1.0f, 255.0f);
-	fire.max_heat = std::clamp(static_cast<int>(max_heat + 0.5f), 1, 255);
+	fire.max_heat = std::clamp(int(max_heat + 0.5f), 1, 255);
 	if (fire.max_heat != previous_max_heat && active)
 		fire.Burn();
 	GuiLabel({ panel.x + 15.0f, panel.y + 35.0f, 100.0f, 24.0f },
 		TextFormat("Max heat: %i", fire.max_heat));
 
-	const bool previous_active = active;
-	GuiCheckBox({ panel.x + 15.0f, panel.y + 75.0f, 24.0f, 24.0f }, "Active", &active);
-	if (active != previous_active) {
-		if (active)
+	bool is_burning = (fire.GetState() == FX::DoomFire::BURNING);
+	bool previous_state = is_burning;
+	GuiCheckBox({ panel.x + 15.0f, panel.y + 75.0f, 24.0f, 24.0f }, "Active", &is_burning);
+	if (is_burning != previous_state) {
+		if (is_burning) {
 			fire.Burn();
-		else
+		} else {
 			fire.Vanish();
+		}
+		active = is_burning;
 	}
 }
 

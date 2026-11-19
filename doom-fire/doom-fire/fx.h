@@ -4,15 +4,10 @@
 #include <raylib.h>
 
 namespace FX {
-		
-	/*
-	typedef struct {		
-		std::vector<Color> colors;
-	} Pallete;
-	*/
 
 	class DoomFire {		
-	public:		
+	public:
+		enum State { IDLE, BURNING};
 		int width;
 		int height;
 		int max_heat = 36;
@@ -25,8 +20,11 @@ namespace FX {
 
 		void Burn();
 		void Vanish();
-	private:		
-		std::vector<uint8_t> heat_buffer;		
+		[[nodiscard]] bool IsActive() const noexcept{ return state == BURNING;}
+		[[nodiscard]] State GetState() const noexcept{ return state; }
+	private:
+		DoomFire::State state = IDLE;
+		std::vector<uint8_t> heat_buffer;
 		RenderTexture2D render_target{};		
 
 		void InitFire();

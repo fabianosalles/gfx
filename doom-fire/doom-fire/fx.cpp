@@ -3,7 +3,7 @@
 #include <limits>
 
 FX::DoomFire::DoomFire(int width, int height)
-	: width(width), height(height)
+	: width(width), height(height), state(IDLE)
 {	
 	InitFire();	
 }
@@ -17,9 +17,7 @@ void FX::DoomFire::InitFire() {
 	heat_buffer.assign(static_cast<std::size_t>(width) * height, 0);
 
 	//set bottom row to max heat
-	for (auto x = 0; x < width; x++) {
-		heat_buffer[(height - 1) * width + x] = max_heat;
-	}
+	Burn();
 }
 
 FX::DoomFire::~DoomFire()
@@ -89,10 +87,12 @@ void FX::DoomFire::Vanish()
 	for (auto x = 0; x < width; x++) {
 		heat_buffer[(height - 1) * width + x] = 0;
 	}
+	state = IDLE;
 }
 
 void FX::DoomFire::Burn() {
 	for (auto x = 0; x < width; x++) {
 		heat_buffer[(height - 1) * width + x] = max_heat;
 	}
+	state = BURNING;
 }
